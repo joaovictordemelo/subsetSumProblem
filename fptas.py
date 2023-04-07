@@ -1,22 +1,23 @@
-def fptas_subset_sum(S, target, epsilon):
+import random
+
+def subset_sum_ftpas(S, T, epsilon):
     n = len(S)
-    T = sum(S)
-    factor = (epsilon * T) / n
-    # Scale down the input set S by factor
-    S_scaled = [int(si / factor) for si in S]
+    B = int(epsilon * n * sum(S))
 
-    # Compute the DP table
-    M = int(n * T / factor) + 1
-    dp_table = [[False] * M for _ in range(n)]
-    for j in range(S_scaled[0], M):
-        dp_table[0][j] = (S_scaled[0] == j)
+    # Initialize the DP table
+    dp = [False] * (2*B+1)
+    dp[B] = True
 
-    for i in range(1, n):
-        for j in range(M):
-            if S_scaled[i] > j:
-                dp_table[i][j] = dp_table[i-1][j]
-            else:
-                dp_table[i][j] = dp_table[i-1][j] or dp_table[i-1][j-S_scaled[i]]
+    # Fill in the DP table
+    for i in range(n):
+        if S[i] > 0:
+            for j in range(2*B, S[i]-1, -1):
+                dp[j] |= dp[j-S[i]]
 
-    # Check if there is a subset of S that adds up to target
-    return dp_table[n-1][int(target / factor)]
+    # Search for a subset sum within the approximation factor
+    for i in range(T, int((1-epsilon)*T)-1, -1):
+        if dp[i+B]:
+            return True
+
+    return False
+
