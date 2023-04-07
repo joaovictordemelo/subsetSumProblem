@@ -1,27 +1,36 @@
-def subset_sum_meet_in_the_middle(S, target):
+from bisect import bisect_left
+
+def subset_sum_mitm(S, T):
     n = len(S)
-    half = n // 2
+    left_half = [(0, 0)]
+    right_half = [(0, 0)]
 
-    # Compute all subsets of the first half of S
-    sums = {0}
-    for i in range(half):
-        sums |= {x + S[i] for x in sums}
+    # Split the set S into two halves
+    for i in range(n // 2):
+        size = len(left_half)
+        for j in range(size):
+            left_half.append((left_half[j][0] + S[i], left_half[j][1] | 1 << i))
 
-    # Check if a subset of the second half sums to the remaining target
-    for j in range(half, n):
-        if target - S[j] in sums:
-            return True
+    for i in range(n // 2, n):
+        size = len(right_half)
+        for j in range(size):
+            right_half.append((right_half[j][0] + S[i], right_half[j][1] | 1 << i))
 
-    # Compute all subsets of the second half of S
-    sums = {0}
-    for i in range(half, n):
-        sums |= {x + S[i] for x in sums}
+    # Sort the right half by weight
+    right_half.sort()
 
-    # Check if a subset of the first half sums to the remaining target
-    for i in range(half):
-        if target - S[i] in sums:
-            return True
+    # Traverse the left half and find the largest weight in the right half
+    max_weight = 0
+    for i in range(len(left_half)):
+        weight, mask = left_half[i]
+        complement = T - weight
 
-    # No subset sums to the target
-    return False
+        # Search for the complement in the right half
+        j = bisect_left(right_half, (complement, 0))
+        while j < len(right_half) and right_half[j][0] == complement:
+            if right_half[j][1] & ~mask:
+                max_weight = max(max_weight, weight + right_half[j][0])
+            j += 1
 
+    # Return whether a subset sum of T exists in S
+    return max_weight >= T
