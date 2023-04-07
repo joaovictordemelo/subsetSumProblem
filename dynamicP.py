@@ -1,25 +1,43 @@
-def subset_sum_dp(S, target):
+def subset_sum_mitm_dp(S, T):
     n = len(S)
-    # Initialize the table with False values
-    table = [[False] * (target + 1) for _ in range(n + 1)]
+    left_half = [0]
+    right_half = [0]
 
-    # Initialize the first column as True
-    for i in range(n + 1):
-        table[i][0] = True
+    # Split the set S into two halves
+    for i in range(n // 2):
+        size = len(left_half)
+        for j in range(size):
+            left_half.append(left_half[j] + S[i])
 
-    # Fill the table using bottom-up dynamic programming
-    for i in range(1, n + 1):
-        for j in range(1, target + 1):
-            # If the current element is greater than the target sum,
-            # we can't include it in any subset
-            if S[i - 1] > j:
-                table[i][j] = table[i - 1][j]
-            # Otherwise, we have two choices:
-            # 1. Include the current element in the subset
-            # 2. Exclude the current element from the subset
-            else:
-                table[i][j] = table[i - 1][j] or table[i - 1][j - S[i - 1]]
+    for i in range(n // 2, n):
+        size = len(right_half)
+        for j in range(size):
+            right_half.append(right_half[j] + S[i])
 
-    # The target sum is achievable if and only if there is a subset
-    # of S that sums to the target
-    return table[n][target]
+    # Sort the right half by weight
+    right_half.sort()
+
+    # Initialize DP array
+    dp = [False] * (T+1)
+    dp[0] = True
+
+    # Traverse the left half and find the largest weight in the right half
+    max_weight = 0
+    for i in range(len(left_half)):
+        weight = left_half[i]
+        complement = T - weight
+
+        # Search for the complement in the right half using binary search
+        j = bisect_left(right_half, complement)
+        if j < len(right_half) and right_half[j] == complement:
+            max_weight = max(max_weight, weight + complement)
+        if j > 0 and right_half[j-1] <= complement:
+            max_weight = max(max_weight, weight + right_half[j-1])
+
+        # Update DP array
+        for t in range(T, weight-1, -1):
+            dp[t] |= dp[t - weight]
+
+    # Return whether a subset sum of T exists in S
+    return dp[T] or max_weight >= T
+
